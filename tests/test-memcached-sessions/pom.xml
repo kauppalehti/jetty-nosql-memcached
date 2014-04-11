@@ -3,40 +3,11 @@
 	<parent>
 		<groupId>com.geishatokyo.jetty.tests</groupId>
 		<artifactId>jetty-nosql-memcached-tests</artifactId>
-		<version>0.3.2-SNAPSHOT</version>
+		<version>0.3.2-KL-SNAPSHOT</version>
 	</parent>
 	<artifactId>test-memcached-sessions</artifactId>
 	<name>test-memcached-sessions</name>
 	<description>Test cases for jetty-nosql-memcached and relating projects.</description>
-	<profiles>
-		<profile>
-			<id>release-sign-artifacts</id>
-			<activation>
-				<property>
-					<name>performRelease</name>
-					<value>true</value>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<version>1.4</version>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
