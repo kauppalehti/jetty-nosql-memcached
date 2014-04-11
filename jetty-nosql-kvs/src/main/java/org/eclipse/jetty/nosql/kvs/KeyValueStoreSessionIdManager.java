@@ -21,6 +21,10 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -61,7 +65,8 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 	protected int _timeoutInMs = 1000;
 	protected int _poolSize = 2;
 
-	/* ------------------------------------------------------------ */
+	private Cache<String, HttpSession> _cache;
+
 	public KeyValueStoreSessionIdManager(Server server, String serverString) throws IOException {
 		super(new Random());
 		this._server = server;
@@ -70,12 +75,10 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 
 	protected abstract AbstractKeyValueStoreClient newClient(String serverString);
 
-	/* ------------------------------------------------------------ */
 	public void setScavengePeriod(long scavengePeriod) {
 		this._defaultExpiry = scavengePeriod;
 	}
 
-	/* ------------------------------------------------------------ */
 	@Override
 	protected void doStart() throws Exception {
 		log.info("starting...");
@@ -87,10 +90,34 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		}
 		_pool = new KeyValueStoreClientPool(_clients);
 
+		if (this._defaultExpiry > 0) {
+			this._cache = CacheBuilder.newBuilder()
+					.expireAfterAccess(this._defaultExpiry, TimeUnit.MILLISECONDS)
+					.removalListener(new RemovalListener<Object, HttpSession>() {
+						public void onRemoval(final RemovalNotification<Object, HttpSession> objectObjectRemovalNotification) {
+							HttpSession session = objectObjectRemovalNotification.getValue();
+							if (session != null) {
+								log.debug("Remove from cache " + session.getId());
+								try {
+									if (System.currentTimeMillis() - session.getLastAccessedTime() > _defaultExpiry) {
+										log.info("Session timeout, invalidating session " + session.getId());
+										session.invalidate();
+									}
+								} catch (Exception e) {
+									log.warn("Failed to invalidate session " + session.getId(), e);
+								}
+							}
+						}
+					})
+					.build();
+		} else {
+			this._cache = CacheBuilder.newBuilder()
+					.build();
+		}
+
 		log.info("started.");
 	}
 
-	/* ------------------------------------------------------------ */
 	@Override
 	protected void doStop() throws Exception {
 		log.info("stopping...");
@@ -100,6 +127,7 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		}
 		_clients = null;
 		_pool = null;
+		_cache = null;
 		super.doStop();
 
 		log.info("stopped.");
@@ -129,6 +157,8 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		boolean exists = ! addKey(idInCluster, dummy);
 		// do not check the validity of the session since
 		// we do not save invalidated sessions anymore.
+
+		_cache.getIfPresent(idInCluster);
 		return exists;
 	}
 
@@ -137,12 +167,16 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		if (session == null) {
 			return;
 		}
+		_cache.put(session.getId(), session);
 		log.debug("addSession:" + session.getId());
 	}
 
 	/* ------------------------------------------------------------ */
 	public void removeSession(HttpSession session) {
-		// nop
+		if (session == null) {
+			return;
+		}
+		_cache.invalidate(session.getId());
 		log.debug("removeSession:" + session.getId());
 	}
 
@@ -160,6 +194,7 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 				}
 			}
 		}
+		_cache.invalidate(sessionId);
 	}
 
 	/* ------------------------------------------------------------ */
@@ -194,6 +229,8 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		} catch (KeyValueStoreClientException error) {
 			log.warn("unable to get key: id=" + idInCluster, error);
 		}
+
+		_cache.getIfPresent(idInCluster);
 		return raw;
 	}
 
@@ -212,6 +249,8 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		} catch (KeyValueStoreClientException error) {
 			log.warn("unable to set key: id=" + idInCluster, error);
 		}
+
+		_cache.getIfPresent(idInCluster);
 		return result;
 	}
 
@@ -230,6 +269,8 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		} catch (KeyValueStoreClientException error) {
 			log.warn("unable to add key: id=" + idInCluster, error);
 		}
+
+		_cache.getIfPresent(idInCluster);
 		return result;
 	}
 
@@ -238,9 +279,17 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		boolean result = false;
 		try {
 			result = _pool.get().delete(mangleKey(idInCluster));
+			if (result == false) {
+				byte[] raw = _pool.get().get(mangleKey(idInCluster));
+				if (raw == null) {
+					result = true; // expired already
+				}
+			}
 		} catch (KeyValueStoreClientException error) {
 			log.warn("unable to delete key: id=" + idInCluster, error);
 		}
+
+		_cache.invalidate(idInCluster);
 		return result;
 	}
 
