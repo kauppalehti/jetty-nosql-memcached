@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.geishatokyo.jetty</groupId>
 	<artifactId>jetty-nosql-memcached-parent</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.1-KL-SNAPSHOT</version>
 	<name>jetty-nosql-memcached-parent</name>
 	<description>Parent projct of jetty-nosql-memcached and relating projects.</description>
 	<url>https://github.com/yyuu/jetty-nosql-memcached</url>
@@ -12,34 +12,6 @@
         <slf4j.version>1.6.1</slf4j.version>
         <junit.version>4.11</junit.version>
 	</properties>
-	<profiles>
-		<profile>
-			<id>release-sign-artifacts</id>
-			<activation>
-				<property>
-					<name>performRelease</name>
-					<value>true</value>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 	<modules>
 		<module>jetty-nosql-kvs</module>
 		<module>jetty-nosql-memcached</module>

@@ -3,39 +3,11 @@
 	<parent>
 		<groupId>com.geishatokyo.jetty</groupId>
 		<artifactId>jetty-nosql-memcached-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.1-KL-SNAPSHOT</version>
 	</parent>
 	<artifactId>jetty-nosql-kvs</artifactId>
 	<name>jetty-nosql-kvs</name>
 	<description>An abstract session manager impl for jetty to store sessions on key-value-store.</description>
-	<profiles>
-		<profile>
-			<id>release-sign-artifacts</id>
-			<activation>
-				<property>
-					<name>performRelease</name>
-					<value>true</value>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
@@ -51,21 +23,31 @@
 			<artifactId>jetty-server</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>com.googlecode</groupId>
-			<artifactId>kryo</artifactId>
-			<version>1.04</version>
-		</dependency>
+        <dependency>
+            <groupId>com.esotericsoftware.kryo</groupId>
+            <artifactId>kryo</artifactId>
+            <version>2.21</version>
+            <classifier>shaded</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.esotericsoftware.reflectasm</groupId>
+                    <artifactId>reflectasm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.esotericsoftware.minlog</groupId>
+                    <artifactId>minlog</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 		<dependency>
 			<groupId>com.thoughtworks.xstream</groupId>
 			<artifactId>xstream</artifactId>
-			<version>1.4.1</version>
+			<version>1.4.4</version>
 		</dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <version>1.4.1</version>
-        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
