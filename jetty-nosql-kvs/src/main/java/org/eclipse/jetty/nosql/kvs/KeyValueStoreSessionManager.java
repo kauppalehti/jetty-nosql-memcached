@@ -86,14 +86,15 @@ public class KeyValueStoreSessionManager extends NoSqlSessionManager {
 		log.info("started.");
 	}
 
-	@Override
-	public void doStop() throws Exception {
-		// override doStop() and invalidatedSessions() to skip invoking NoSqlSessionManager#invalidatedSeessions()
-		// we do not want to invalidate all sessions on servlets restart.
-		log.info("stopping...");
-		super.doStop();
-		log.info("stopped.");
-	}
+    @Override
+    public void doStop() throws Exception
+    {
+        // override doStop() and invalidatedSessions() to skip invoking NoSqlSessionManager#invalidatedSeessions()
+        // we do not want to invalidate all sessions on servlets restart.
+        log.info("stopping...");
+        super.doStop();
+        log.info("stopped.");
+    }
 
 	/* ------------------------------------------------------------ */
 	/*
@@ -120,23 +121,26 @@ public class KeyValueStoreSessionManager extends NoSqlSessionManager {
 			log.debug("save:" + session);
 			session.willPassivate();
 
-			if (!session.isValid()) {
-				log.debug("save: skip saving invalidated session: id=" + session.getId());
-				deleteKey(session.getId());
-				return null;
-			}
+            if (!session.isValid())
+            {
+                log.debug("save: skip saving invalidated session: id=" + session.getId());
+                deleteKey(session.getId());
+                return null;
+            }
 
-			ISerializableSession data;
-			synchronized (session) {
-				data = getSessionFactory().create(session);
-			}
-			data.setDomain(_cookieDomain);
-			data.setPath(_cookiePath);
-			long longVersion = 1; // default version for new sessions
-			if (version != null) {
-				longVersion = (Long) version + 1L;
-			}
-			data.setVersion(longVersion);
+            ISerializableSession data;
+            synchronized (session)
+            {
+                data = getSessionFactory().create(session);
+            }
+            data.setDomain(_cookieDomain);
+            data.setPath(_cookiePath);
+            long longVersion = 1; // default version for new sessions
+            if (version != null)
+            {
+                longVersion = (Long) version + 1L;
+            }
+            data.setVersion(longVersion);
 
 			try {
 				if (!setKey(session.getId(), data)) {
@@ -244,7 +248,7 @@ public class KeyValueStoreSessionManager extends NoSqlSessionManager {
 
 	/*------------------------------------------------------------ */
 	@Override
-	protected NoSqlSession loadSession(final String clusterId) {
+	protected NoSqlSession loadSession(String clusterId) {
 		log.debug("loadSession: loading: id=" + clusterId);
 		ISerializableSession data = getKey(clusterId);
 		log.debug("loadSession: loaded: id=" + clusterId + ", data=" + data);
@@ -255,7 +259,7 @@ public class KeyValueStoreSessionManager extends NoSqlSessionManager {
 
 		boolean valid = data.isValid();
 		if (!valid) {
-			log.debug("loadSession: id=" + clusterId + ", data=" + data + " has been invalidated.");
+			log.debug("loadSession: id=" + clusterId + ", data="+ data + " has been invalidated.");
 			return null;
 		}
 
@@ -280,22 +284,21 @@ public class KeyValueStoreSessionManager extends NoSqlSessionManager {
 		}
 
 		try {
-			long version = data.getVersion();
-			long created = data.getCreationTime();
-			long accessed = data.getAccessed();
-			SmarterNoSqlSession session = new SmarterNoSqlSession(this, created, accessed, clusterId, version);
+            long version = data.getVersion();
+            long created = data.getCreationTime();
+            long accessed = data.getAccessed();
+            SmarterNoSqlSession session = new SmarterNoSqlSession(this, created, accessed, clusterId, version);
 
 			// get the attributes for the context
 			Enumeration<String> attrs = data.getAttributeNames();
 
-			//			log.debug("attrs: " + Collections.list(attrs));
 			if (attrs != null) {
 				while (attrs.hasMoreElements()) {
 					String name = attrs.nextElement();
 					Object value = data.getAttribute(name);
 
-					session.initializeAttribute(name, value);
-					session.bindValue(name, value);
+                    session.initializeAttribute(name, value);
+                    session.bindValue(name, value);
 
 				}
 			}

@@ -15,7 +15,10 @@ package org.eclipse.jetty.nosql.kvs;
 //========================================================================
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,47 +40,47 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Based partially on the jdbc session id manager...
  * 
- * Theory is that we really only need the session id manager for the local
- * instance so we have something to scavenge on, namely the list of known ids
+ * Theory is that we really only need the session id manager for the local instance so we have something to scavenge on,
+ * namely the list of known ids
  * 
- * this class has a timer that runs at the scavenge delay that runs a query for
- * all id's known to this node and that have and old accessed value greater then
- * the scavengeDelay.
+ * this class has a timer that runs at the scavenge delay that runs a query for all id's known to this node and that
+ * have and old accessed value greater then the scavengeDelay.
  * 
- * these found sessions are then run through the invalidateAll(id) method that
- * is a bit hinky but is supposed to notify all handlers this id is now DOA and
- * ought to be cleaned up. this ought to result in a save operation on the
- * session that will change the valid field to false (this conjecture is
- * unvalidated atm)
+ * these found sessions are then run through the invalidateAll(id) method that is a bit hinky but is supposed to notify
+ * all handlers this id is now DOA and ought to be cleaned up. this ought to result in a save operation on the session
+ * that will change the valid field to false (this conjecture is unvalidated atm)
  */
-public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdManager {
-	private final static Logger log = Log.getLogger("org.eclipse.jetty.nosql.kvs.KeyValueStoreSessionIdManager");
+public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdManager
+{
+    private final static Logger log = Log.getLogger("org.eclipse.jetty.nosql.kvs.KeyValueStoreSessionIdManager");
 
-	protected Server _server;
+    protected Server _server;
 
-	protected long _defaultExpiry = TimeUnit.MINUTES.toMillis(30); // 30 minutes
+    protected long _defaultExpiry = TimeUnit.MINUTES.toMillis(30); // 30 minutes
 
-	protected String _keyPrefix = "";
-	protected String _keySuffix = "";
-	protected KeyValueStoreClientPool _pool = null;
-	protected IKeyValueStoreClient[] _clients;
-	protected String _serverString = "";
-	protected int _timeoutInMs = 1000;
-	protected int _poolSize = 2;
+    protected String _keyPrefix = "";
+    protected String _keySuffix = "";
+    protected IKeyValueStoreClient _client = null;
+    protected String _serverString = "";
+    protected int _timeoutInMs = 1000;
+    protected int _poolSize = 2;
 
 	private Cache<String, HttpSession> _cache;
 
+    /* ------------------------------------------------------------ */
 	public KeyValueStoreSessionIdManager(Server server, String serverString) throws IOException {
 		super(new Random());
 		this._server = server;
 		this._serverString = serverString;
 	}
 
-	protected abstract AbstractKeyValueStoreClient newClient(String serverString);
+    protected abstract AbstractKeyValueStoreClient newClient(String serverString);
 
-	public void setScavengePeriod(long scavengePeriod) {
-		this._defaultExpiry = scavengePeriod;
-	}
+    /* ------------------------------------------------------------ */
+    public void setScavengePeriod(final long scavengePeriod)
+    {
+        this._defaultExpiry = scavengePeriod;
+    }
 
 	@Override
 	protected void doStart() throws Exception {
@@ -133,34 +136,35 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		log.info("stopped.");
 	}
 
-	private IKeyValueStoreClient createClient() throws Exception {
-		IKeyValueStoreClient client = newClient(_serverString);
-		if (client == null) {
-			throw new IllegalStateException("newClient(" + _serverString + ") returns null.");
-		}
-		client.establish();
-		return client;
-	}
+    private IKeyValueStoreClient createClient() throws Exception {
+        IKeyValueStoreClient client = newClient(_serverString);
+        if (client == null) {
+            throw new IllegalStateException("newClient(" + _serverString + ") returns null.");
+        }
+        client.establish();
+        return client;
+    }
 
-	private void destroyClient(IKeyValueStoreClient client) throws Exception {
-		if (client != null) {
-			client.shutdown();
-		}
-	}
+    private void destroyClient(IKeyValueStoreClient client) throws Exception {
+        if (client != null) {
+            client.shutdown();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * is the session id known to memcached, and is it valid
+     */
+    public boolean idInUse(final String idInCluster)
+    {
+        byte[] dummy = idInCluster.getBytes(); // dummy string for reserving key
+        boolean exists = !addKey(idInCluster, dummy);
+        // do not check the validity of the session since
+        // we do not save invalidated sessions anymore.
 
-	/* ------------------------------------------------------------ */
-	/**
-	 * is the session id known to memcached, and is it valid
-	 */
-	public boolean idInUse(String idInCluster) {
-		byte[] dummy = idInCluster.getBytes(); // dummy string for reserving key
-		boolean exists = ! addKey(idInCluster, dummy);
-		// do not check the validity of the session since
-		// we do not save invalidated sessions anymore.
-
-		_cache.getIfPresent(idInCluster);
-		return exists;
-	}
+        _cache.getIfPresent(idInCluster);
+        return exists;
+    }
 
 	/* ------------------------------------------------------------ */
 	public void addSession(HttpSession session) {
@@ -197,46 +201,53 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		_cache.invalidate(sessionId);
 	}
 
-	/* ------------------------------------------------------------ */
-	public String getClusterId(String nodeId) {
-		if (nodeId == null) {
-			return null;
-		}
-		int dot = nodeId.lastIndexOf('.');
-		return (dot > 0) ? nodeId.substring(0, dot) : nodeId;
-	}
+    /* ------------------------------------------------------------ */
+    public String getClusterId(final String nodeId)
+    {
+        if (nodeId == null)
+        {
+            return null;
+        }
+        int dot = nodeId.lastIndexOf('.');
+        return (dot > 0) ? nodeId.substring(0, dot) : nodeId;
+    }
 
-	/* ------------------------------------------------------------ */
-	public String getNodeId(String clusterId, HttpServletRequest request) {
-		if (clusterId == null) {
-			return null;
-		}
-		if (_workerName != null) {
-			return clusterId + '.' + _workerName;
-		}
-		return clusterId;
-	}
+    /* ------------------------------------------------------------ */
+    public String getNodeId(final String clusterId, final HttpServletRequest request)
+    {
+        if (clusterId == null)
+        {
+            return null;
+        }
+        if (_workerName != null)
+        {
+            return clusterId + '.' + _workerName;
+        }
+        return clusterId;
+    }
 
-	protected String mangleKey(String key) {
-		return _keyPrefix + key + _keySuffix;
-	}
+    protected String mangleKey(final String key)
+    {
+        return _keyPrefix + key + _keySuffix;
+    }
 
-	protected byte[] getKey(String idInCluster) {
-		log.debug("getKey: id=" + idInCluster);
-		byte[] raw = null;
-		try {
-			raw = _pool.get().get(mangleKey(idInCluster));
-		} catch (KeyValueStoreClientException error) {
-			log.warn("unable to get key: id=" + idInCluster, error);
-		}
+    protected byte[] getKey(String idInCluster) {
+        log.debug("getKey: id=" + idInCluster);
+        byte[] raw = null;
+        try {
+            raw = _pool.get().get(mangleKey(idInCluster));
+        } catch (KeyValueStoreClientException error) {
+            log.warn("unable to get key: id=" + idInCluster, error);
+        }
 
-		_cache.getIfPresent(idInCluster);
-		return raw;
-	}
+        _cache.getIfPresent(idInCluster);
+        return raw;
+    }
 
-	protected boolean setKey(String idInCluster, byte[] raw) {
-		return setKey(idInCluster, raw, getDefaultExpiry());
-	}
+    protected boolean setKey(final String idInCluster, final byte[] raw)
+    {
+        return setKey(idInCluster, raw, getDefaultExpiry());
+    }
 
 	protected boolean setKey(String idInCluster, byte[] raw, int expiry) {
 		if (expiry < 0) {
@@ -254,9 +265,10 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		return result;
 	}
 
-	protected boolean addKey(String idInCluster, byte[] raw) {
-		return addKey(idInCluster, raw, getDefaultExpiry());
-	}
+    protected boolean addKey(final String idInCluster, final byte[] raw)
+    {
+        return addKey(idInCluster, raw, getDefaultExpiry());
+    }
 
 	protected boolean addKey(String idInCluster, byte[] raw, int expiry) {
 		if (expiry < 0) {
@@ -293,41 +305,50 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		return result;
 	}
 
-	public int getDefaultExpiry() {
-		return (int) TimeUnit.MILLISECONDS.toSeconds(_defaultExpiry);
-	}
+    public int getDefaultExpiry()
+    {
+        return (int) TimeUnit.MILLISECONDS.toSeconds(_defaultExpiry);
+    }
 
-	public void setDefaultExpiry(int defaultExpiry) {
-		this._defaultExpiry = TimeUnit.SECONDS.toMillis(defaultExpiry);
-	}
+    public void setDefaultExpiry(final int defaultExpiry)
+    {
+        this._defaultExpiry = TimeUnit.SECONDS.toMillis(defaultExpiry);
+    }
 
-	public String getKeyPrefix() {
-		return _keyPrefix;
-	}
+    public String getKeyPrefix()
+    {
+        return _keyPrefix;
+    }
 
-	public void setKeyPrefix(String keyPrefix) {
-		this._keyPrefix = keyPrefix;
-	}
+    public void setKeyPrefix(final String keyPrefix)
+    {
+        this._keyPrefix = keyPrefix;
+    }
 
-	public String getKeySuffix() {
-		return _keySuffix;
-	}
+    public String getKeySuffix()
+    {
+        return _keySuffix;
+    }
 
-	public void setKeySuffix(String keySuffix) {
-		this._keySuffix = keySuffix;
-	}
+    public void setKeySuffix(final String keySuffix)
+    {
+        this._keySuffix = keySuffix;
+    }
 
-	public String getServerString() {
-		return _serverString;
-	}
+    public String getServerString()
+    {
+        return _serverString;
+    }
 
-	public void setServerString(String serverString) {
-		this._serverString = serverString;
-	}
+    public void setServerString(final String serverString)
+    {
+        this._serverString = serverString;
+    }
 
-	public int getTimeoutInMs() {
-		return _timeoutInMs;
-	}
+    public int getTimeoutInMs()
+    {
+        return _timeoutInMs;
+    }
 
 	public void setTimeoutInMs(int timeoutInMs) {
 		this._timeoutInMs = timeoutInMs;
@@ -341,19 +362,45 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
 		this._poolSize = poolSize;
 	}
 
-	/**
-	 * @deprecated from 0.3.0. this is false by default and is not an option.
-	 */
-	@Deprecated
-	public void setSticky(boolean sticky) { // TODO: remove
-		log.warn("deprecated setter `setSticky' was called. this will be removed in future release.");
-	}
+    /**
+     * @deprecated from 0.3.0. this is false by default and is not an option.
+     */
+    @Deprecated
+    public void setSticky(final boolean sticky)
+    { // TODO: remove
+        log.warn("deprecated setter `setSticky' was called. this will be removed in future release.");
+    }
 
-	/**
-	 * @deprecated from 0.3.0. this is false by default and is not an option.
-	 */
-	@Deprecated
-	public boolean isSticky() { // TODO: remove
-		return false;
-	}
+    /**
+     * @deprecated from 0.3.0. this is false by default and is not an option.
+     */
+    @Deprecated
+    public boolean isSticky()
+    { // TODO: remove
+        return false;
+    }
+
+    @Override
+    public void renewSessionId(final String oldClusterId, final String oldNodeId, final HttpServletRequest request)
+    {
+        //generate a new id
+        String newClusterId = newSessionId(request.hashCode());
+
+        //tell all contexts to update the id 
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i = 0; contexts != null && i < contexts.length; i++)
+        {
+            SessionHandler sessionHandler = ((ContextHandler) contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null)
+            {
+                SessionManager manager = sessionHandler.getSessionManager();
+
+                if (manager != null && manager instanceof KeyValueStoreSessionManager)
+                {
+                    ((KeyValueStoreSessionManager) manager).renewSessionId(oldClusterId, oldNodeId, newClusterId,
+                        getNodeId(newClusterId, request));
+                }
+            }
+        }
+    }
 }

@@ -1,16 +1,14 @@
 # jetty-nosql-memcached
 
 [![Build Status](https://secure.travis-ci.org/yyuu/jetty-nosql-memcached.png?branch=master)](http://travis-ci.org/yyuu/jetty-nosql-memcached)
-[![Build Status](https://buildhive.cloudbees.com/job/yyuu/job/jetty-nosql-memcached/badge/icon)](https://buildhive.cloudbees.com/job/yyuu/job/jetty-nosql-memcached/)
 
 ## Overview
 
 SessionManager implementation for Jetty based on jetty-nosql.
 
-
 ## Install
 
-jetty-nosql-memcached is an extension for Jetty-8.
+jetty-nosql-memcached is an extension for Jetty-9.
 You have to install jars into jetty's `${jetty.home}/lib/ext`.
 
 Built jars of jetty-nosql-memcached can be found on Maven Central.
@@ -80,7 +78,7 @@ You can configure the behavior of session ID manager with following setters.
 
 ### Configuring "session manager"
 
-SessionManagers can be configured by either `${APP_ROOT}/WEB-INF/jetty-web.xml` or `${JETTY_HOME}/context/${APP_NAME}.xml`.
+SessionManagers can be configured by either `${APP_ROOT}/WEB-INF/jetty-web.xml` or `${JETTY_HOME}/webapps/${APP_NAME}.xml`.
 
 Sample configuration for `${APP_ROOT}/WEB-INF/jetty-web.xml`:
 
@@ -113,7 +111,7 @@ Sample configuration for `${APP_ROOT}/WEB-INF/jetty-web.xml`:
       context.setSessionHandler(new SessionHandler(sessionManager));
       -->
 
-Sample configuration for `${JETTY_HOME}/context/${APP_NAME}.xml`:
+Sample configuration for `${JETTY_HOME}/webapps/${APP_NAME}.xml`:
 
     <?xml version="1.0"  encoding="ISO-8859-1"?>
     <!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.eclipse.org/configure.dtd">
@@ -134,7 +132,7 @@ Sample configuration for `${JETTY_HOME}/context/${APP_NAME}.xml`:
                 <Ref id="memcachedSessionIdManager" />
               </Set>
               <Set name="sessionFactory">
-                <Ref id="org.eclipse.jetty.nosql.kvs.session.xstream.XStreamSessionFactory" />
+                <New class="org.eclipse.jetty.nosql.kvs.session.xstream.XStreamSessionFactory" />
               </Set>
             </New>
           </Arg>
@@ -193,8 +191,8 @@ Use maven-release-plguin.
 
 ## License
 
-* Copyright (c) 2011-2012 Geisha Tokyo Entertainment, Inc.
-* Copyright (c) 2011-2012 Yamashita, Yuu
+* Copyright (c) 2011-2013 Geisha Tokyo Entertainment, Inc.
+* Copyright (c) 2011-2013 Yamashita, Yuu
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0

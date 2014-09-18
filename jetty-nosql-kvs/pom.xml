@@ -3,11 +3,39 @@
 	<parent>
 		<groupId>com.geishatokyo.jetty</groupId>
 		<artifactId>jetty-nosql-memcached-parent</artifactId>
-		<version>0.3.2-KL-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>jetty-nosql-kvs</artifactId>
 	<name>jetty-nosql-kvs</name>
 	<description>An abstract session manager impl for jetty to store sessions on key-value-store.</description>
+	<profiles>
+		<profile>
+			<id>release-sign-artifacts</id>
+			<activation>
+				<property>
+					<name>performRelease</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
@@ -33,11 +61,16 @@
 			<artifactId>xstream</artifactId>
 			<version>1.4.1</version>
 		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>14.0.1</version>
-		</dependency>
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>14.0.1</version>
+        </dependency>
 	</dependencies>
 	<build>
 		<plugins>
