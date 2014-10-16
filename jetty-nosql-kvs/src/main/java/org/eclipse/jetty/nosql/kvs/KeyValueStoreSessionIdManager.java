@@ -25,6 +25,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import org.apache.commons.lang.SerializationUtils;
+import org.eclipse.jetty.nosql.kvs.session.serializable.SerializableSession;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -153,8 +155,9 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
      * is the session id known to memcached, and is it valid
      */
     public boolean idInUse(final String idInCluster) {
-        byte[] dummy = idInCluster.getBytes(); // dummy string for reserving key
-        boolean exists = !addKey(idInCluster, dummy);
+        // reserve the id with a dummy session
+        boolean exists = !addKey(idInCluster, SerializationUtils.serialize(new SerializableSession()));
+
         // do not check the validity of the session since
         // we do not save invalidated sessions anymore.
 
