@@ -156,6 +156,7 @@
                         <aggregate>true</aggregate>
                         <locale>en_US</locale>
                         <encoding>UTF-8</encoding>
+                        <failOnError>false</failOnError>
                     </configuration>
                 </plugin>
                 <plugin>
