@@ -23,9 +23,13 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream {
 	@Override
 	public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException {
 		try {
-			return Class.forName(cl.getName(), false, classLoader);
+			return Thread.currentThread().getContextClassLoader().loadClass(cl.getName()); 
 		} catch (ClassNotFoundException e) {
-			return super.resolveClass(cl);
+			try {
+				return Class.forName(cl.getName(), false, classLoader); 
+			} catch (ClassNotFoundException e2) {
+				return super.resolveClass(cl);
+			}
 		}
 	}
 }

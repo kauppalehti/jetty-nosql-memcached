@@ -40,6 +40,8 @@ public class MemcachedSessionIdManager extends KeyValueStoreSessionIdManager {
 		log.info("stopped.");
 	}
 
+
+
 	@Override
 	protected AbstractKeyValueStoreClient newClient(String serverString) {
 		synchronized(this) {
