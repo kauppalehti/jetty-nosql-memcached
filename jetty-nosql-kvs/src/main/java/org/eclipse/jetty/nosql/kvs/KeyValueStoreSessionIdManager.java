@@ -15,6 +15,7 @@ package org.eclipse.jetty.nosql.kvs;
 //========================================================================
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +27,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.nosql.kvs.session.serializable.SerializableSession;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -325,7 +327,9 @@ public abstract class KeyValueStoreSessionIdManager extends AbstractSessionIdMan
     }
 
     public void setServerString(final String serverString) {
-        this._serverString = serverString;
+        String[] splitted = StringUtils.split(serverString, ' ');
+        Arrays.sort(splitted);
+        this._serverString = StringUtils.join(splitted, ' ');
     }
 
     public int getTimeoutInMs() {
