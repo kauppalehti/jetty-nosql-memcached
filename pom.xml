@@ -24,11 +24,11 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
-	<scm>
-		<connection>scm:git:git://github.com/yyuu/jetty-nosql-memcached.git</connection>
-		<developerConnection>scm:git:git@github.com:yyuu/jetty-nosql-memcached.git</developerConnection>
-		<url>scm:git:git://github.com/yyuu/jetty-nosql-memcached.git</url>
-	</scm>
+    <scm>
+        <connection>scm:git:github_jetty-nosql-memcached:kauppalehti/jetty-nosql-memcached.git</connection>
+        <developerConnection>scm:git:github_jetty-nosql-memcached:kauppalehti/jetty-nosql-memcached.git</developerConnection>
+        <url>scm:git:git://github.com/kauppalehti/jetty-nosql-memcached.git</url>
+    </scm>
 	<issueManagement>
 		<system>github</system>
 		<url>https://github.com/yyuu/jetty-nosql-memcached/issues</url>
